@@ -34,7 +34,10 @@ GridMap.prototype.IsInterior = function( x, y ) {
 GridMap.prototype.IsCorner = function( x, y ) {
   var self     = this;
   var grid_ndx = ( x * self.Height ) + y;
-  return self.Corners.get( grid_ndx );
+  if ( self.IsValueInclusiveRange(x, 0, self.Width-1) && self.IsValueInclusiveRange(y, 0, self.Height-1) ) {
+    return self.Corners.get( grid_ndx );
+  }
+  return false;
 }
 
 GridMap.prototype.IsValueInclusiveRange = function( x, min_x, max_x ) {
@@ -83,10 +86,77 @@ GridMap.prototype.HasWallBottom = function( x, y ) {
   return self.HorizontalWalls.get( grid_ndx );
 }
 
-GridMap.prototype.GetDVS = function( x, y ) {
+GridMap.prototype.GetDVS = function( test_x, test_y, min_x, min_y, max_x, max_y, test_direction ) {
   var self     = this;
-  var grid_ndx = ( x * self.Height ) + y;
-  return self.RegionDvs[grid_ndx];
+  var grid_ndx = ( test_x * self.Height ) + test_y;
+  var dvs      = self.RegionDvs[grid_ndx];
+  var limit_dvs;
+  var x;
+  var y;
+  var i;
+
+  // no range limit provided
+  if ( min_x == undefined ) {
+    return dvs;
+  }
+
+  if ( !dvs ) {
+    return dvs;
+  }
+
+  limit_dvs       = {};
+  limit_dvs.min_y = ( dvs.min_y < min_y ) ? min_y : dvs.min_y;
+  limit_dvs.max_y = ( dvs.max_y > max_y ) ? max_y : dvs.max_y;
+  limit_dvs.range = [];
+  for (y=limit_dvs.min_y;y<=limit_dvs.max_y;y++) {
+    limit_dvs.range[y] = { };
+    limit_dvs.range[y].min_x = ( dvs.range[y].min_x < min_x ) ? min_x : dvs.range[y].min_x;
+    limit_dvs.range[y].max_x = ( dvs.range[y].max_x > max_x ) ? max_x : dvs.range[y].max_x;
+  }
+
+  limit_dvs.portals = { top: [], bottom: [], left: [], right: [] };
+
+  if ( test_direction & self.kTop ) {
+    for (i=0;i<dvs.portals.top.length;i++) { 
+      x           = dvs.portals.top[i].x;
+      y           = dvs.portals.top[i].y;
+      if ( self.IsValueInclusiveRange(x, min_x, max_x) && self.IsValueInclusiveRange(y, min_y, max_y) ) {
+        limit_dvs.portals.top.push( { x:x, y:y } ); 
+      }
+    }
+  }
+
+  if ( test_direction & self.kBottom ) {
+    for (i=0;i<dvs.portals.bottom.length;i++) { 
+      x           = dvs.portals.bottom[i].x;
+      y           = dvs.portals.bottom[i].y;
+      if ( self.IsValueInclusiveRange(x, min_x, max_x) && self.IsValueInclusiveRange(y, min_y, max_y) ) {
+        limit_dvs.portals.bottom.push( { x:x, y:y } ); 
+      }
+    }    
+  }
+
+  if ( test_direction & self.kLeft ) {
+    for (i=0;i<dvs.portals.left.length;i++) { 
+      x           = dvs.portals.left[i].x;
+      y           = dvs.portals.left[i].y;
+      if ( self.IsValueInclusiveRange(x, min_x, max_x) && self.IsValueInclusiveRange(y, min_y, max_y) ) {
+        limit_dvs.portals.left.push( { x:x, y:y } ); 
+      }
+    }
+  }
+
+  if ( test_direction & self.kRight ) {
+    for (i=0;i<dvs.portals.right.length;i++) { 
+      x           = dvs.portals.right[i].x;
+      y           = dvs.portals.right[i].y;
+      if ( self.IsValueInclusiveRange(x, min_x, max_x) && self.IsValueInclusiveRange(y, min_y, max_y) ) {
+        limit_dvs.portals.right.push( { x:x, y:y } ); 
+      }
+    }
+  }
+
+  return limit_dvs;
 }
 
 GridMap.prototype.TestSegmentPoint = function( segment_v0, segment_v1, pt ) {
@@ -394,9 +464,8 @@ GridMap.prototype.GetVisibleSegmentsThroughSinglePortal = function( portal_direc
   } 
 } 
 
-GridMap.prototype.GetVisibleThroughPortals = function( test_x, test_y, region_x, region_y ) {
+GridMap.prototype.GetVisibleThroughPortals = function( dvs, test_x, test_y ) {
   var self      = this;
-  var dvs       = self.GetDVS( region_x, region_y );
   var test_pt   = { x: test_x, y: test_y };
   var results   = { walls: [], segments: [], portals: [], corners: [] };
   var x;

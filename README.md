@@ -14,5 +14,6 @@ Order of demonstration (interactive steps)
    - Assuming end points of the path aren't line of sight, the closest path will always go through one of these corners.
    - Collect corners as you go through portals.
    - Behind one of the planes that is connected to the portal edge
-7. (path-6.html) Merge four regions' visible per corner. Collect visible corners and distances.
-8. Visualize corner to corner distance triangular array (sparse)
+7. (path-6.html) Display merged DVS and facing portals per region that includes corner
+8. (path-7.html) Display solid visible area. Collect line of sight corners.
+9. Visualize corner to corner distance triangular array (sparse)

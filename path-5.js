@@ -28,7 +28,7 @@ $( function() {
 
       if ( is_interior ) {
         dvs            = Map.GetDVS( test_region_x, test_region_y );
-        portal_results = Map.GetVisibleThroughPortals( test_x, test_y, test_region_x, test_region_y );
+        portal_results = Map.GetVisibleThroughPortals( dvs, test_x, test_y );
 
         for (y=dvs.min_y;y<=dvs.max_y;y++) {
           for (x=dvs.range[y].min_x;x<=dvs.range[y].max_x;x++) {

@@ -146,10 +146,10 @@ GridMapCanvas.prototype.DrawCornersAll = function() {
   }
 }
 
-GridMapCanvas.prototype.DrawHighlight = function( x, y ) {
+GridMapCanvas.prototype.DrawHighlight = function( x, y, fill_style ) {
   var self = this;
   if ( self.Map.IsInterior(x,y) ) {
-    self.VisibleContext.fillStyle = 'rgb(255,255,255)';
+    self.VisibleContext.fillStyle = (!fill_style)?'rgb(255,255,255)':fill_style;
     self.VisibleContext.fillRect( x*self.GridSize, y*self.GridSize, self.GridSize, self.GridSize );
   }
 }
