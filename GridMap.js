@@ -1,0 +1,465 @@
+function GridMap() {
+}
+
+GridMap.prototype.kBothLeft    = 0;
+GridMap.prototype.kARightBLeft = 1;
+GridMap.prototype.kALeftBRight = 2;
+GridMap.prototype.kBothRight   = 3;
+
+GridMap.prototype.kTop    = 1;
+GridMap.prototype.kLeft   = 2;
+GridMap.prototype.kBottom = 4;
+GridMap.prototype.kRight  = 8;
+
+GridMap.prototype.Load = function( map_url, on_success ) {
+  var self = this;
+  $.get( map_url, function( map ) { 
+    var bit_size;
+    $.extend( self, map ); 
+    bit_size              = self.Width * self.Height;
+    self.Interior         = new BitArray( bit_size, self.Interior );
+    self.VerticalWalls    = new BitArray( bit_size, self.VerticalWalls  );
+    self.HorizontalWalls  = new BitArray( bit_size, self.HorizontalWalls  );
+    self.Corners          = new BitArray( bit_size, self.Corners  );
+    on_success( self ); 
+  }, 'json' );
+}
+
+GridMap.prototype.IsInterior = function( x, y ) {
+  var self     = this;
+  var grid_ndx = ( x * self.Height ) + y;
+  return self.Interior.get( grid_ndx );
+}
+
+GridMap.prototype.IsCorner = function( x, y ) {
+  var self     = this;
+  var grid_ndx = ( x * self.Height ) + y;
+  return self.Corners.get( grid_ndx );
+}
+
+GridMap.prototype.IsValueInclusiveRange = function( x, min_x, max_x ) {
+  return ( x >= min_x ) && ( x <= max_x );
+}
+
+GridMap.prototype.HasUpperLeftCorner = function( x, y ) {
+  var self     = this;
+  var grid_ndx = ( x * self.Height ) + y;
+  return self.Corners.get( grid_ndx );
+}
+
+GridMap.prototype.HasWallLeft = function( x, y ) {
+  var self     = this;
+  var grid_ndx = ( x * self.Height ) + y;
+  if ( x == 0 ) {
+    return true;
+  }
+  return self.VerticalWalls.get( grid_ndx );
+}
+
+GridMap.prototype.HasWallRight = function( x, y ) {
+  var self     = this;
+  if ( x == (self.Width-1) ) {
+    return true;
+  }
+  var grid_ndx = ( (x+1) * self.Height ) + y;
+  return self.VerticalWalls.get( grid_ndx );
+}
+
+GridMap.prototype.HasWallTop = function( x, y ) {
+  var self     = this;
+  if ( y == 0 ) {
+    return true;
+  }
+  var grid_ndx = ( x * self.Height ) + y;
+  return self.HorizontalWalls.get( grid_ndx );
+}
+
+GridMap.prototype.HasWallBottom = function( x, y ) {
+  var self     = this;
+  if ( y == (self.Height-1) ) {
+    return true;
+  }
+  var grid_ndx = ( x * self.Height ) + (y+1);
+  return self.HorizontalWalls.get( grid_ndx );
+}
+
+GridMap.prototype.GetDVS = function( x, y ) {
+  var self     = this;
+  var grid_ndx = ( x * self.Height ) + y;
+  return self.RegionDvs[grid_ndx];
+}
+
+GridMap.prototype.TestSegmentPoint = function( segment_v0, segment_v1, pt ) {
+  return ((segment_v1.x - segment_v0.x)*(pt.y - segment_v0.y) - (segment_v1.y - segment_v0.y)*(pt.x - segment_v0.x)) > 0;
+}
+
+GridMap.prototype.TestSegmentAgainstTop = function( segment, region ) {
+  // top = left->right
+  var self   = this;
+  var side_a = self.TestSegmentPoint( segment.v0, segment.v1, { x:region.x,     y:region.y } )?1:0;
+  var side_b = self.TestSegmentPoint( segment.v0, segment.v1, { x:(region.x+1), y:region.y } )?1:0;
+  var result = ( side_a ) | ( side_b << 1 );
+  return result;
+}
+
+GridMap.prototype.TestSegmentAgainstBottom = function( segment, region ) {
+  // bottom = left->right
+  var self   = this;
+  var side_a = self.TestSegmentPoint( segment.v0, segment.v1, { x:region.x,     y:(region.y+1) } )?1:0;
+  var side_b = self.TestSegmentPoint( segment.v0, segment.v1, { x:(region.x+1), y:(region.y+1) } )?1:0;
+  var result = ( side_a ) | ( side_b << 1 );
+  return result;
+}
+
+GridMap.prototype.TestSegmentAgainstLeft = function( segment, region ) {
+  // left = top->bottom
+  var self   = this;
+  var side_a = self.TestSegmentPoint( segment.v0, segment.v1, { x:region.x, y:region.y     } )?1:0;
+  var side_b = self.TestSegmentPoint( segment.v0, segment.v1, { x:region.x, y:(region.y+1) } )?1:0;
+  var result = ( side_a ) | ( side_b << 1 );
+  return result;
+}
+
+GridMap.prototype.TestSegmentAgainstRight = function( segment, region ) {
+  // right = top->bottom
+  var self   = this;
+  var side_a = self.TestSegmentPoint( segment.v0, segment.v1, { x:(region.x+1), y:region.y     } )?1:0;
+  var side_b = self.TestSegmentPoint( segment.v0, segment.v1, { x:(region.x+1), y:(region.y+1) } )?1:0;
+  var result = ( side_a ) | ( side_b << 1 );
+  return result;
+}
+
+GridMap.prototype.AddResultsLocalCorner = function( test_pt, corner_x, corner_y, results ) {
+  var self   = this;
+  if ( ( test_pt.x > corner_x ) && ( test_pt.y > corner_y ) ) {
+    if ( self.HasWallTop( corner_x-1, corner_y ) && self.HasWallLeft( corner_x, corner_y-1 ) ) {
+      return;
+    }
+  } else if ( ( test_pt.x < corner_x ) && ( test_pt.y > corner_y ) ) {
+    if ( self.HasWallTop( corner_x, corner_y ) && self.HasWallLeft( corner_x, corner_y-1 ) ) {
+      return;
+    }
+  } else if ( ( test_pt.x < corner_x ) && ( test_pt.y < corner_y ) ) {
+    if ( self.HasWallTop( corner_x, corner_y ) && self.HasWallLeft( corner_x, corner_y ) ) {
+      return;
+    }
+  } else if ( ( test_pt.x > corner_x ) && ( test_pt.y < corner_y ) ) {
+    if ( self.HasWallTop( corner_x-1, corner_y ) && self.HasWallLeft( corner_x, corner_y ) ) {
+      return;
+    }
+  }
+  
+  results.corners.push( { x:corner_x, y:corner_y } );
+}
+
+GridMap.prototype.GetVisibleSegmentsThroughSinglePortal = function( portal_direction, portal_segment, test_pt, results, min_x, min_y, max_x, max_y ) {
+  var self      = this;
+  var r_x;
+  var r_y;
+  var test_directions;
+
+  switch ( portal_direction ) {
+    case self.kTop:
+      r_x             = portal_segment.v0.x|0;
+      r_y             = (portal_segment.v0.y|0)-1;
+      test_directions = self.kTop | self.kLeft | self.kRight;
+      min_y           = (min_y && (min_y > 0)) ? min_y : 0;
+      max_y           = (max_y && (max_y < r_y))  ? max_y : r_y;
+      min_x           = (min_x && (min_x > 0)) ? min_x : 0;
+      max_x           = (max_x && (max_x < (self.Width-1))) ? max_x : (self.Width-1);
+    break;
+    case self.kBottom:
+      r_x             = portal_segment.v1.x|0;
+      r_y             = portal_segment.v1.y|0;
+      test_directions = self.kBottom | self.kLeft | self.kRight;
+      min_y           = (min_y && (min_y > r_y)) ? min_y : r_y; 
+      max_y           = (max_y && (max_y < (self.Height-1)))  ? max_y : (self.Height-1);
+      min_x           = (min_x && (min_x > 0)) ? min_x : 0;
+      max_x           = (max_x && (max_x < (self.Width-1))) ? max_x : (self.Width-1);
+    break;
+    case self.kLeft:
+      r_x             = (portal_segment.v1.x|0)-1;
+      r_y             = portal_segment.v1.y|0;
+      test_directions = self.kLeft | self.kTop | self.kBottom;
+      min_y           = (min_y && (min_y > 0)) ? min_y : 0; 
+      max_y           = (max_y && (max_y < (self.Height-1)))  ? max_y : (self.Height-1);
+      min_x           = (min_x && (min_x > 0)) ? min_x : 0;
+      max_x           = (max_x && (max_x < r_x)) ? max_x : r_x;
+    break;
+    case self.kRight:
+      r_x             = portal_segment.v0.x|0;
+      r_y             = portal_segment.v0.y|0;
+      test_directions = self.kRight | self.kTop | self.kBottom;
+      min_y           = (min_y && (min_y > 0)) ? min_y : 0; 
+      max_y           = (max_y && (max_y < (self.Height-1)))  ? max_y : (self.Height-1);
+      min_x           = (min_x && (min_x > r_x)) ? min_x : r_x;
+      max_x           = (max_x && (max_x < (self.Width-1))) ? max_x : (self.Width-1);
+    break;
+  }
+
+  var dvs       = self.GetDVS( r_x, r_y );
+  var x;
+  var y;
+  var i;
+
+  if (!dvs) {
+    return;
+  }
+
+  var segment_a = { v0: {x: test_pt.x, y: test_pt.y},
+                    v1: {x: portal_segment.v0.x, y: portal_segment.v0.y } };
+  var segment_b = { v0: {x: test_pt.x, y: test_pt.y},
+                    v1: {x: portal_segment.v1.x, y: portal_segment.v1.y } };
+
+  results.segments.push( segment_a );
+  results.segments.push( segment_b );
+
+  var test_a;
+  var test_b;
+  var test_region;
+  var result_wall;
+  var result_portal;
+  var segment_a_dx = segment_a.v1.x - segment_a.v0.x;
+  var segment_a_dy = segment_a.v1.y - segment_a.v0.y;
+  var segment_b_dx = segment_b.v1.x - segment_b.v0.x;
+  var segment_b_dy = segment_b.v1.y - segment_b.v0.y;
+  var segment_a_m  = segment_a_dy / segment_a_dx;
+  var segment_b_m  = segment_b_dy / segment_b_dx;
+  var segment_a_b  = segment_a.v0.y - ( segment_a_m * segment_a.v0.x );
+  var segment_b_b  = segment_b.v0.y - ( segment_b_m * segment_b.v0.x );
+  var a_x;
+  var a_y;
+  var b_x;
+  var b_y;
+
+  var range_min_y = ( dvs.min_y < min_y ) ? min_y : dvs.min_y;
+  var range_max_y = ( dvs.max_y > max_y ) ? max_y : dvs.max_y; 
+  var range_min_x;
+  var range_max_x;
+ 
+  for (y=range_min_y;y<=range_max_y;y++) {
+    range_min_x = ( dvs.range[y].min_x < min_x ) ? min_x : dvs.range[y].min_x;
+    range_max_x = ( dvs.range[y].max_x > max_x ) ? max_x : dvs.range[y].max_x; 
+    for (x=range_min_x;x<=range_max_x;x++) {
+      test_region = { x:x, y:y };
+
+      if ( ( test_directions & self.kTop ) && self.HasWallTop(x,y) && (test_pt.y > y) ) {
+        test_a = self.TestSegmentAgainstTop( segment_a, test_region );
+        test_b = self.TestSegmentAgainstTop( segment_b, test_region );
+        if (( test_a != self.kBothLeft ) && ( test_b != self.kBothRight )) {
+          a_x         = ( test_a == self.kBothRight ) ? x     : (( y-segment_a_b ) / segment_a_m);
+          b_x         = ( test_b == self.kBothLeft  ) ? (x+1) : (( y-segment_b_b ) / segment_b_m);
+          result_wall = { v0: { x:a_x, y:y }, v1: { x:b_x, y:y } };
+          results.walls.push( result_wall );
+        }
+      }
+
+      if ( ( test_directions & self.kBottom ) && self.HasWallBottom(x,y) && (test_pt.y < y) ) {
+        test_a = self.TestSegmentAgainstBottom( segment_a, test_region );
+        test_b = self.TestSegmentAgainstBottom( segment_b, test_region );
+        if (( test_a != self.kBothLeft ) && ( test_b != self.kBothRight )) {
+          a_x         = ( test_a == self.kBothRight ) ? (x+1) : (( (y+1)-segment_a_b ) / segment_a_m);
+          b_x         = ( test_b == self.kBothLeft  ) ? x     : (( (y+1)-segment_b_b ) / segment_b_m);
+          result_wall = { v0: { x:a_x, y:(y+1) }, v1: { x:b_x, y:(y+1) } };
+          results.walls.push( result_wall );
+        }
+      }
+
+      if ( ( test_directions & self.kLeft ) && self.HasWallLeft(x,y) && (test_pt.x > x) ) {
+        test_a = self.TestSegmentAgainstLeft( segment_a, test_region );
+        test_b = self.TestSegmentAgainstLeft( segment_b, test_region );
+        if (( test_a != self.kBothLeft ) && ( test_b != self.kBothRight )) {
+          a_y         = ( test_a == self.kBothRight ) ? (y+1) : (( x * segment_a_m ) + segment_a_b);
+          b_y         = ( test_b == self.kBothLeft  ) ? y     : (( x * segment_b_m ) + segment_b_b);
+          result_wall = { v0: { x:x, y:a_y }, v1: { x:x, y:b_y } };
+          results.walls.push( result_wall );
+        }
+      }
+
+      if ( ( test_directions & self.kRight ) && self.HasWallRight(x,y) && (test_pt.x < x) ) {
+        test_a = self.TestSegmentAgainstRight( segment_a, test_region );
+        test_b = self.TestSegmentAgainstRight( segment_b, test_region );
+        if (( test_a != self.kBothLeft ) && ( test_b != self.kBothRight )) {
+          a_y         = ( test_a == self.kBothRight ) ? y     : (( (x+1) * segment_a_m ) + segment_a_b);
+          b_y         = ( test_b == self.kBothLeft  ) ? (y+1) : (( (x+1) * segment_b_m ) + segment_b_b);
+          result_wall = { v0: { x:(x+1), y:a_y }, v1: { x:(x+1), y:b_y } };
+          results.walls.push( result_wall );
+        }
+      }
+    }
+  }
+
+  if ( test_directions & self.kTop ) {
+    for (i=0;i<dvs.portals.top.length;i++) { 
+      x           = dvs.portals.top[i].x;
+      y           = dvs.portals.top[i].y;
+      if ( self.IsValueInclusiveRange(x, min_x, max_x) && self.IsValueInclusiveRange(y, min_y, max_y) && (test_pt.y > y) ) {
+        test_region = { x:x, y:y };
+        test_a      = self.TestSegmentAgainstTop( segment_a, test_region );
+        test_b      = self.TestSegmentAgainstTop( segment_b, test_region );
+        if (( test_a != self.kBothLeft ) && ( test_b != self.kBothRight )) {
+          a_x           = ( test_a == self.kBothRight ) ? x     : (( y-segment_a_b ) / segment_a_m);
+          b_x           = ( test_b == self.kBothLeft  ) ? (x+1) : (( y-segment_b_b ) / segment_b_m);
+          result_portal = { v0: { x:a_x, y:y }, v1: { x:b_x, y:y } };
+          results.portals.push( result_portal );
+          self.GetVisibleSegmentsThroughSinglePortal( self.kTop, result_portal, test_pt, results, min_x, min_y, max_x, max_y );
+
+          if ( (test_a == self.kBothRight ) && self.IsCorner(x,y) ) {
+            self.AddResultsLocalCorner( test_pt, x, y, results );
+          }
+          if ( (test_b == self.kBothLeft ) && self.IsCorner(x+1,y) ) {
+            self.AddResultsLocalCorner( test_pt, x+1, y, results );
+          }
+        }
+      }
+    }
+  }
+
+  if ( test_directions & self.kBottom ) {
+    for (i=0;i<dvs.portals.bottom.length;i++) { 
+      x           = dvs.portals.bottom[i].x;
+      y           = dvs.portals.bottom[i].y;
+      if ( self.IsValueInclusiveRange(x, min_x, max_x) && self.IsValueInclusiveRange(y, min_y, max_y) && (test_pt.y < y) ) {
+        test_region = { x:x, y:y };
+        test_a      = self.TestSegmentAgainstBottom( segment_a, test_region );
+        test_b      = self.TestSegmentAgainstBottom( segment_b, test_region );
+        if (( test_a != self.kBothLeft ) && ( test_b != self.kBothRight )) {
+          a_x           = ( test_a == self.kBothRight ) ? (x+1) : (( (y+1)-segment_a_b ) / segment_a_m);
+          b_x           = ( test_b == self.kBothLeft  ) ? x     : (( (y+1)-segment_b_b ) / segment_b_m);
+          result_portal = { v0: { x:a_x, y:(y+1) }, v1: { x:b_x, y:(y+1) } };
+          results.portals.push( result_portal );
+          self.GetVisibleSegmentsThroughSinglePortal( self.kBottom, result_portal, test_pt, results, min_x, min_y, max_x, max_y );
+
+          if ( (test_a == self.kBothRight ) && self.IsCorner(x+1,y+1) ) {
+            self.AddResultsLocalCorner( test_pt, x+1, y+1, results );
+          }
+          if ( (test_b == self.kBothLeft ) && self.IsCorner(x,y+1) ) {
+            self.AddResultsLocalCorner( test_pt, x, y+1, results );
+          }
+        }
+      }
+    }
+  }
+
+  if ( test_directions & self.kLeft ) {
+    for (i=0;i<dvs.portals.left.length;i++) { 
+      x           = dvs.portals.left[i].x;
+      y           = dvs.portals.left[i].y;
+      if ( self.IsValueInclusiveRange(x, min_x, max_x) && self.IsValueInclusiveRange(y, min_y, max_y) && (test_pt.x > x) ) {
+        test_region = { x:x, y:y };
+        test_a      = self.TestSegmentAgainstLeft( segment_a, test_region );
+        test_b      = self.TestSegmentAgainstLeft( segment_b, test_region );
+        if (( test_a != self.kBothLeft ) && ( test_b != self.kBothRight )) {
+          a_y           = ( test_a == self.kBothRight ) ? (y+1) : (( x * segment_a_m ) + segment_a_b);
+          b_y           = ( test_b == self.kBothLeft  ) ? y     : (( x * segment_b_m ) + segment_b_b);
+          result_portal = { v0: { x:x, y:a_y }, v1: { x:x, y:b_y } };
+          results.portals.push( result_portal );
+          self.GetVisibleSegmentsThroughSinglePortal( self.kLeft, result_portal, test_pt, results, min_x, min_y, max_x, max_y );
+
+          if ( (test_a == self.kBothRight ) && self.IsCorner(x,y+1) ) {
+            self.AddResultsLocalCorner( test_pt, x, y+1, results );
+          }
+          if ( (test_b == self.kBothLeft ) && self.IsCorner(x,y) ) {
+            self.AddResultsLocalCorner( test_pt, x, y, results );
+          }
+        }
+      }
+    }
+  }
+
+  if ( test_directions & self.kRight ) {
+    for (i=0;i<dvs.portals.right.length;i++) { 
+      x           = dvs.portals.right[i].x;
+      y           = dvs.portals.right[i].y;
+      if ( self.IsValueInclusiveRange(x, min_x, max_x) && self.IsValueInclusiveRange(y, min_y, max_y) && (test_pt.x < x) ) {
+        test_region = { x:x, y:y };
+        test_a      = self.TestSegmentAgainstRight( segment_a, test_region );
+        test_b      = self.TestSegmentAgainstRight( segment_b, test_region );
+        if (( test_a != self.kBothLeft ) && ( test_b != self.kBothRight )) {
+          a_y           = ( test_a == self.kBothRight ) ? y     : (( (x+1) * segment_a_m ) + segment_a_b);
+          b_y           = ( test_b == self.kBothLeft  ) ? (y+1) : (( (x+1) * segment_b_m ) + segment_b_b);
+          result_portal = { v0: { x:(x+1), y:a_y }, v1: { x:(x+1), y:b_y } };
+          results.portals.push( result_portal );
+          self.GetVisibleSegmentsThroughSinglePortal( self.kRight, result_portal, test_pt, results, min_x, min_y, max_x, max_y );
+
+          if ( (test_a == self.kBothRight ) && self.IsCorner(x+1,y) ) {
+            self.AddResultsLocalCorner( test_pt, x+1, y, results );
+          }
+          if ( (test_b == self.kBothLeft ) && self.IsCorner(x+1,y+1) ) {
+            self.AddResultsLocalCorner( test_pt, x+1, y+1, results );
+          }
+        }
+      }
+    }
+  } 
+} 
+
+GridMap.prototype.GetVisibleThroughPortals = function( test_x, test_y, region_x, region_y ) {
+  var self      = this;
+  var dvs       = self.GetDVS( region_x, region_y );
+  var test_pt   = { x: test_x, y: test_y };
+  var results   = { walls: [], segments: [], portals: [], corners: [] };
+  var x;
+  var y;
+  var i;
+  var portal_segment;
+
+  // for each portal in the dvs, get the dvs from the region on the other side.
+  // eliminate from that set:
+  // 1. any regions on the same side as the portal as the test point
+
+  for (i=0;i<dvs.portals.top.length;i++) { 
+    x              = dvs.portals.top[i].x;
+    y              = dvs.portals.top[i].y;
+    portal_segment = { v0: { x:x, y:y }, v1: { x:(x+1), y:y } };
+    self.GetVisibleSegmentsThroughSinglePortal( self.kTop, portal_segment, test_pt, results );
+
+    if ( self.IsCorner(x,y) ) {
+      self.AddResultsLocalCorner( test_pt, x, y, results );
+    }
+    if ( self.IsCorner(x+1,y) ) {
+      self.AddResultsLocalCorner( test_pt, x+1, y, results );
+    }
+  }
+  for (i=0;i<dvs.portals.bottom.length;i++) { 
+    x         = dvs.portals.bottom[i].x;
+    y         = dvs.portals.bottom[i].y;
+    portal_segment = { v0: { x:(x+1), y:(y+1) }, v1: { x:x, y:(y+1) } };
+    self.GetVisibleSegmentsThroughSinglePortal( self.kBottom, portal_segment, test_pt, results );
+
+    if ( self.IsCorner(x+1,y+1) ) {
+      self.AddResultsLocalCorner( test_pt, x+1, y+1, results );
+    }
+    if ( self.IsCorner(x,y+1) ) {
+      self.AddResultsLocalCorner( test_pt, x, y+1, results );
+    }
+  }
+  for (i=0;i<dvs.portals.left.length;i++) { 
+    x         = dvs.portals.left[i].x;
+    y         = dvs.portals.left[i].y;
+    portal_segment = { v0: { x:x, y:(y+1) }, v1: { x:x, y:y } };
+    self.GetVisibleSegmentsThroughSinglePortal( self.kLeft, portal_segment, test_pt, results );
+
+    if ( self.IsCorner(x,y+1) ) {
+      self.AddResultsLocalCorner( test_pt, x, y+1, results );
+    }
+    if ( self.IsCorner(x,y) ) {
+      self.AddResultsLocalCorner( test_pt, x, y, results );
+    }
+  }
+  for (i=0;i<dvs.portals.right.length;i++) { 
+    x         = dvs.portals.right[i].x;
+    y         = dvs.portals.right[i].y;
+    portal_segment = { v0: { x:(x+1), y:y }, v1: { x:(x+1), y:(y+1) } };
+    self.GetVisibleSegmentsThroughSinglePortal( self.kRight, portal_segment, test_pt, results );
+
+    if ( self.IsCorner(x+1,y) ) {
+      self.AddResultsLocalCorner( test_pt, x+1, y, results );
+    }
+    if ( self.IsCorner(x+1,y+1) ) {
+      self.AddResultsLocalCorner( test_pt, x+1, y+1, results );
+    }
+  }
+ 
+  return results;
+}
