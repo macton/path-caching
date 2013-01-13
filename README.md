@@ -4,6 +4,7 @@ patch-caching
 Demonstration code for article on caching paths
 
 Order of demonstration (interactive steps)
+
 1. Map to display.
    - region hover
 2. Find inner corners.
