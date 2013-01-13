@@ -2,11 +2,14 @@ function GridMapCanvas( grid_map, grid_size, parent, options ) {
   var self = this;
 
   var defaults = { 
+    DrawHighlightRegion:      false, 
+    DrawHighlightDVS:         false, 
+    DrawCorners:              false, 
     DrawPortalResultRays:     false, 
     DrawPortalResultPortals:  false, 
     DrawPortalResultSegments: false, 
-    DrawPortalResultSolid:    true,
-    DrawPortalResultCorners:  true 
+    DrawPortalResultSolid:    false,
+    DrawPortalResultCorners:  false
   };
 
   self.Settings            = $.extend( {}, defaults, options );
@@ -77,10 +80,18 @@ GridMapCanvas.prototype.UpdateFrame = function() {
   self.VisibleContext.drawImage( self.FillCanvas, 0, 0, self.CanvasWidth, self.CanvasHeight, 0, 0, self.CanvasWidth, self.CanvasHeight );
 
   if ( self.Highlight ) {
+
+    if ( self.Settings.DrawHighlightRegion ) {
+      self.DrawHighlight( self.Highlight.x, self.Highlight.y );
+    }
+
     dvs = self.Map.GetDVS( self.Highlight.x, self.Highlight.y );
-    for (y=dvs.min_y;y<=dvs.max_y;y++) {
-      for (x=dvs.range[y].min_x;x<=dvs.range[y].max_x;x++) {
-         self.DrawHighlight( x, y );
+
+    if ( self.Settings.DrawHighlightDVS ) {
+      for (y=dvs.min_y;y<=dvs.max_y;y++) {
+        for (x=dvs.range[y].min_x;x<=dvs.range[y].max_x;x++) {
+           self.DrawHighlight( x, y );
+        }
       }
     }
 
@@ -195,7 +206,7 @@ GridMapCanvas.prototype.UpdateFrame = function() {
       }
     }
 
-    if ( self.Settings.DrawPortalResultPortals ) {
+    if ( self.Settings.DrawPortalResultPortals || self.Settings.DrawHighlightDVSPortals ) {
       for (i=0;i<dvs.portals.top.length;i++) { 
         self.DrawPortalTop( dvs.portals.top[i].x, dvs.portals.top[i].y );
       }
@@ -225,7 +236,7 @@ GridMapCanvas.prototype.UpdateFrame = function() {
     self.VisibleContext.drawImage( self.WallsCanvas, 0, 0, self.CanvasWidth, self.CanvasHeight, 0, 0, self.CanvasWidth, self.CanvasHeight );
   }
 
-  if ( !self.Settings.DrawPortalResultCorners ) {
+  if (( !self.Settings.DrawPortalResultCorners ) && self.Settings.DrawCorners ) {
     self.VisibleContext.drawImage( self.CornersCanvas, 0, 0, self.CanvasWidth, self.CanvasHeight, 0, 0, self.CanvasWidth, self.CanvasHeight );
   }
 
