@@ -529,6 +529,41 @@ GridMap.prototype.GetVisibleThroughPortals = function( dvs, test_x, test_y ) {
       self.AddResultsLocalCorner( test_pt, x+1, y+1, results );
     }
   }
- 
+
+  self.ReduceCorners( test_x, test_y, results );
+
   return results;
+}
+
+// Remove corners that don't have line of sight because another corner is along the same line.
+GridMap.prototype.ReduceCorners = function( test_x, test_y, results ) {
+  function frac_reduce(numerator,denominator){
+    var find_gcd = function gcd(a,b){ return b ? find_gcd(b, a%b) : a; };
+    var gcd      = find_gcd(numerator,denominator);
+    return [numerator/gcd, denominator/gcd];
+  }
+
+  var corner_by_slope = { };
+  var slope;
+  var slope_id;
+  var dist_sq;
+  var dx;
+  var dy;
+  var corner;
+
+  for (i=0;i<results.corners.length;i++) {
+    dx       = results.corners[i].x-test_x;
+    dy       = results.corners[i].y-test_y;
+    slope    = frac_reduce( dy, dx );
+    slope_id = slope[0] + '/' + slope[1];
+    dist_sq  = (dx*dx) + (dy*dy);
+    if ((!corner_by_slope[ slope_id ]) || (corner_by_slope[ slope_id ].dist_sq > dist_sq)) {
+      corner_by_slope[ slope_id ] = { dist_sq: dist_sq, x: results.corners[i].x, y: results.corners[i].y };
+    }
+  }
+
+  results.corners = [];
+  for (corner in corner_by_slope) {
+    results.corners.push( { x: corner_by_slope[corner].x, y: corner_by_slope[corner].y, dist_sq: corner_by_slope[corner].dist_sq  } );
+  } 
 }
