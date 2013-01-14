@@ -20,6 +20,10 @@ $( function() {
       var tr_dvs;
       var bl_dvs;
       var br_dvs;
+      var tl_portal_results;
+      var tr_portal_results;
+      var bl_portal_results;
+      var br_portal_results;
       var x;
       var y;
 
@@ -32,82 +36,119 @@ $( function() {
         br_dvs = Map.GetDVS( test_x,   test_y,   test_x, test_y, Map.Width-1, Map.Height-1, Map.kBottom | Map.kRight );
 
         if ( tl_dvs ) {
+          tl_portal_results = Map.GetVisibleThroughPortals( tl_dvs, test_x, test_y );
+
           for (y=tl_dvs.min_y;y<=tl_dvs.max_y;y++) {
             for (x=tl_dvs.range[y].min_x;x<=tl_dvs.range[y].max_x;x++) {
                MapCanvas.DrawHighlight( x, y, palette[0] );
             }
           }
-          for (i=0;i<tl_dvs.portals.top.length;i++) { 
-            MapCanvas.DrawPortalTop( tl_dvs.portals.top[i].x, tl_dvs.portals.top[i].y );
-          }
-          for (i=0;i<tl_dvs.portals.bottom.length;i++) { 
-            MapCanvas.DrawPortalBottom( tl_dvs.portals.bottom[i].x, tl_dvs.portals.bottom[i].y );
-          }
-          for (i=0;i<tl_dvs.portals.left.length;i++) { 
-            MapCanvas.DrawPortalLeft( tl_dvs.portals.left[i].x, tl_dvs.portals.left[i].y );
-          }
-          for (i=0;i<tl_dvs.portals.right.length;i++) { 
-            MapCanvas.DrawPortalRight( tl_dvs.portals.right[i].x, tl_dvs.portals.right[i].y );
+
+          for (i=0;i<tl_portal_results.walls.length;i++) {
+            x0 = tl_portal_results.walls[i].v0.x;
+            y0 = tl_portal_results.walls[i].v0.y;
+            x1 = tl_portal_results.walls[i].v1.x;
+            y1 = tl_portal_results.walls[i].v1.y;
+            x2 = test_x;
+            y2 = test_y;
+    
+            MapCanvas.VisibleContext.strokeStyle = palette[0];
+            MapCanvas.VisibleContext.fillStyle   = palette[0];
+            MapCanvas.VisibleContext.lineWidth   = 1;
+            MapCanvas.VisibleContext.beginPath();
+            MapCanvas.VisibleContext.moveTo( (x0*MapCanvas.GridSize), (y0*MapCanvas.GridSize) );
+            MapCanvas.VisibleContext.lineTo( (x1*MapCanvas.GridSize), (y1*MapCanvas.GridSize) );
+            MapCanvas.VisibleContext.lineTo( (x2*MapCanvas.GridSize), (y2*MapCanvas.GridSize) );
+            MapCanvas.VisibleContext.fill();
+            MapCanvas.VisibleContext.stroke();
           }
         }
 
         if ( tr_dvs ) {
+          tr_portal_results = Map.GetVisibleThroughPortals( tr_dvs, test_x, test_y );
+
           for (y=tr_dvs.min_y;y<=tr_dvs.max_y;y++) {
             for (x=tr_dvs.range[y].min_x;x<=tr_dvs.range[y].max_x;x++) {
                MapCanvas.DrawHighlight( x, y, palette[1] );
             }
           }
-          for (i=0;i<tr_dvs.portals.top.length;i++) { 
-            MapCanvas.DrawPortalTop( tr_dvs.portals.top[i].x, tr_dvs.portals.top[i].y );
-          }
-          for (i=0;i<tr_dvs.portals.bottom.length;i++) { 
-            MapCanvas.DrawPortalBottom( tr_dvs.portals.bottom[i].x, tr_dvs.portals.bottom[i].y );
-          }
-          for (i=0;i<tr_dvs.portals.left.length;i++) { 
-            MapCanvas.DrawPortalLeft( tr_dvs.portals.left[i].x, tr_dvs.portals.left[i].y );
-          }
-          for (i=0;i<tr_dvs.portals.right.length;i++) { 
-            MapCanvas.DrawPortalRight( tr_dvs.portals.right[i].x, tr_dvs.portals.right[i].y );
+
+          for (i=0;i<tr_portal_results.walls.length;i++) {
+            x0 = tr_portal_results.walls[i].v0.x;
+            y0 = tr_portal_results.walls[i].v0.y;
+            x1 = tr_portal_results.walls[i].v1.x;
+            y1 = tr_portal_results.walls[i].v1.y;
+            x2 = test_x;
+            y2 = test_y;
+    
+            MapCanvas.VisibleContext.strokeStyle = palette[1];
+            MapCanvas.VisibleContext.fillStyle   = palette[1];
+            MapCanvas.VisibleContext.lineWidth   = 1;
+            MapCanvas.VisibleContext.beginPath();
+            MapCanvas.VisibleContext.moveTo( (x0*MapCanvas.GridSize), (y0*MapCanvas.GridSize) );
+            MapCanvas.VisibleContext.lineTo( (x1*MapCanvas.GridSize), (y1*MapCanvas.GridSize) );
+            MapCanvas.VisibleContext.lineTo( (x2*MapCanvas.GridSize), (y2*MapCanvas.GridSize) );
+            MapCanvas.VisibleContext.fill();
+            MapCanvas.VisibleContext.stroke();
           }
         }
 
         if ( bl_dvs ) {
+          bl_portal_results = Map.GetVisibleThroughPortals( bl_dvs, test_x, test_y );
+
           for (y=bl_dvs.min_y;y<=bl_dvs.max_y;y++) {
             for (x=bl_dvs.range[y].min_x;x<=bl_dvs.range[y].max_x;x++) {
                MapCanvas.DrawHighlight( x, y, palette[2] );
             }
           }
-          for (i=0;i<bl_dvs.portals.top.length;i++) { 
-            MapCanvas.DrawPortalTop( bl_dvs.portals.top[i].x, bl_dvs.portals.top[i].y );
-          }
-          for (i=0;i<bl_dvs.portals.bottom.length;i++) { 
-            MapCanvas.DrawPortalBottom( bl_dvs.portals.bottom[i].x, bl_dvs.portals.bottom[i].y );
-          }
-          for (i=0;i<bl_dvs.portals.left.length;i++) { 
-            MapCanvas.DrawPortalLeft( bl_dvs.portals.left[i].x, bl_dvs.portals.left[i].y );
-          }
-          for (i=0;i<bl_dvs.portals.right.length;i++) { 
-            MapCanvas.DrawPortalRight( bl_dvs.portals.right[i].x, bl_dvs.portals.right[i].y );
+
+          for (i=0;i<bl_portal_results.walls.length;i++) {
+            x0 = bl_portal_results.walls[i].v0.x;
+            y0 = bl_portal_results.walls[i].v0.y;
+            x1 = bl_portal_results.walls[i].v1.x;
+            y1 = bl_portal_results.walls[i].v1.y;
+            x2 = test_x;
+            y2 = test_y;
+    
+            MapCanvas.VisibleContext.strokeStyle = palette[2];
+            MapCanvas.VisibleContext.fillStyle   = palette[2];
+            MapCanvas.VisibleContext.lineWidth   = 1;
+            MapCanvas.VisibleContext.beginPath();
+            MapCanvas.VisibleContext.moveTo( (x0*MapCanvas.GridSize), (y0*MapCanvas.GridSize) );
+            MapCanvas.VisibleContext.lineTo( (x1*MapCanvas.GridSize), (y1*MapCanvas.GridSize) );
+            MapCanvas.VisibleContext.lineTo( (x2*MapCanvas.GridSize), (y2*MapCanvas.GridSize) );
+            MapCanvas.VisibleContext.fill();
+            MapCanvas.VisibleContext.stroke();
           }
         }
 
         if ( br_dvs ) {
+
+          br_portal_results = Map.GetVisibleThroughPortals( br_dvs, test_x, test_y );
+
           for (y=br_dvs.min_y;y<=br_dvs.max_y;y++) {
             for (x=br_dvs.range[y].min_x;x<=br_dvs.range[y].max_x;x++) {
                MapCanvas.DrawHighlight( x, y, palette[3] );
             }
           }
-          for (i=0;i<br_dvs.portals.top.length;i++) { 
-            MapCanvas.DrawPortalTop( br_dvs.portals.top[i].x, br_dvs.portals.top[i].y );
-          }
-          for (i=0;i<br_dvs.portals.bottom.length;i++) { 
-            MapCanvas.DrawPortalBottom( br_dvs.portals.bottom[i].x, br_dvs.portals.bottom[i].y );
-          }
-          for (i=0;i<br_dvs.portals.left.length;i++) { 
-            MapCanvas.DrawPortalLeft( br_dvs.portals.left[i].x, br_dvs.portals.left[i].y );
-          }
-          for (i=0;i<br_dvs.portals.right.length;i++) { 
-            MapCanvas.DrawPortalRight( br_dvs.portals.right[i].x, br_dvs.portals.right[i].y );
+
+          for (i=0;i<br_portal_results.walls.length;i++) {
+            x0 = br_portal_results.walls[i].v0.x;
+            y0 = br_portal_results.walls[i].v0.y;
+            x1 = br_portal_results.walls[i].v1.x;
+            y1 = br_portal_results.walls[i].v1.y;
+            x2 = test_x;
+            y2 = test_y;
+    
+            MapCanvas.VisibleContext.strokeStyle = palette[3];
+            MapCanvas.VisibleContext.fillStyle   = palette[3];
+            MapCanvas.VisibleContext.lineWidth   = 1;
+            MapCanvas.VisibleContext.beginPath();
+            MapCanvas.VisibleContext.moveTo( (x0*MapCanvas.GridSize), (y0*MapCanvas.GridSize) );
+            MapCanvas.VisibleContext.lineTo( (x1*MapCanvas.GridSize), (y1*MapCanvas.GridSize) );
+            MapCanvas.VisibleContext.lineTo( (x2*MapCanvas.GridSize), (y2*MapCanvas.GridSize) );
+            MapCanvas.VisibleContext.fill();
+            MapCanvas.VisibleContext.stroke();
           }
         }
       }
@@ -121,6 +162,50 @@ $( function() {
         MapCanvas.VisibleContext.beginPath();
         MapCanvas.VisibleContext.arc(x*MapCanvas.GridSize, y*MapCanvas.GridSize, 8, 0, 2 * Math.PI, true);
         MapCanvas.VisibleContext.fill();
+
+        if ( tl_dvs ) {
+          MapCanvas.VisibleContext.fillStyle = 'rgb(255,255,255)';
+          for (i=0;i<tl_portal_results.corners.length;i++) {
+            x = tl_portal_results.corners[i].x;
+            y = tl_portal_results.corners[i].y;
+            MapCanvas.VisibleContext.beginPath();
+            MapCanvas.VisibleContext.arc(x*MapCanvas.GridSize, y*MapCanvas.GridSize, 8, 0, 2 * Math.PI, true);
+            MapCanvas.VisibleContext.fill();
+          }
+        }
+
+        if ( tr_dvs ) {
+          MapCanvas.VisibleContext.fillStyle = 'rgb(255,255,255)';
+          for (i=0;i<tr_portal_results.corners.length;i++) {
+            x = tr_portal_results.corners[i].x;
+            y = tr_portal_results.corners[i].y;
+            MapCanvas.VisibleContext.beginPath();
+            MapCanvas.VisibleContext.arc(x*MapCanvas.GridSize, y*MapCanvas.GridSize, 8, 0, 2 * Math.PI, true);
+            MapCanvas.VisibleContext.fill();
+          }
+        }
+
+        if ( bl_dvs ) {
+          MapCanvas.VisibleContext.fillStyle = 'rgb(255,255,255)';
+          for (i=0;i<bl_portal_results.corners.length;i++) {
+            x = bl_portal_results.corners[i].x;
+            y = bl_portal_results.corners[i].y;
+            MapCanvas.VisibleContext.beginPath();
+            MapCanvas.VisibleContext.arc(x*MapCanvas.GridSize, y*MapCanvas.GridSize, 8, 0, 2 * Math.PI, true);
+            MapCanvas.VisibleContext.fill();
+          }
+        }
+
+        if ( br_dvs ) {
+          MapCanvas.VisibleContext.fillStyle = 'rgb(255,255,255)';
+          for (i=0;i<br_portal_results.corners.length;i++) {
+            x = br_portal_results.corners[i].x;
+            y = br_portal_results.corners[i].y;
+            MapCanvas.VisibleContext.beginPath();
+            MapCanvas.VisibleContext.arc(x*MapCanvas.GridSize, y*MapCanvas.GridSize, 8, 0, 2 * Math.PI, true);
+            MapCanvas.VisibleContext.fill();
+          }
+        }
       }
 
       MapCanvas.DrawCornersCanvasIntoVisibleContext();
