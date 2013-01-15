@@ -465,6 +465,10 @@ GridMap.prototype.GetVisibleSegmentsThroughSinglePortal = function( portal_direc
 } 
 
 GridMap.prototype.GetVisibleThroughPortals = function( dvs, test_x, test_y ) {
+  if ( !dvs) {
+    return false;
+  }
+
   var self      = this;
   var test_pt   = { x: test_x, y: test_y };
   var results   = { walls: [], segments: [], portals: [], corners: [] };

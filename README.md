@@ -16,4 +16,5 @@ Order of demonstration (interactive steps)
    - Behind one of the planes that is connected to the portal edge
 7. (path-6.html) Display merged DVS and facing portals per region that includes corner
 8. (path-7.html) Display solid visible area. Collect line of sight corners.
+   - Extra care to include (unoccluded) corners along DVS boundaries
 9. Visualize corner to corner distance triangular array (sparse)

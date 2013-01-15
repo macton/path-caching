@@ -24,20 +24,78 @@ $( function() {
       var tr_portal_results;
       var bl_portal_results;
       var br_portal_results;
+      var boundary_corners = [];
+      var i;
       var x;
       var y;
+      var min_x;
+      var min_y;
+      var max_x;
+      var max_y;
+
+      //
+      // Calculate results
+      //
+
+      if ( is_corner ) {
+        tl_dvs            = Map.GetDVS( test_x-1, test_y-1, 0,      0,      test_x-1,    test_y-1,     Map.kTop    | Map.kLeft  );
+        tr_dvs            = Map.GetDVS( test_x,   test_y-1, test_x, 0,      Map.Width-1, test_y-1,     Map.kTop    | Map.kRight );
+        bl_dvs            = Map.GetDVS( test_x-1, test_y,   0,      test_y, test_x-1,    Map.Height-1, Map.kBottom | Map.kLeft  );
+        br_dvs            = Map.GetDVS( test_x,   test_y,   test_x, test_y, Map.Width-1, Map.Height-1, Map.kBottom | Map.kRight );
+        tl_portal_results = Map.GetVisibleThroughPortals( tl_dvs, test_x, test_y );
+        tr_portal_results = Map.GetVisibleThroughPortals( tr_dvs, test_x, test_y );
+        bl_portal_results = Map.GetVisibleThroughPortals( bl_dvs, test_x, test_y );
+        br_portal_results = Map.GetVisibleThroughPortals( br_dvs, test_x, test_y );
+        if ( tl_dvs || bl_dvs ) {
+          min_x = tl_dvs ? tl_dvs.range[ test_y-1 ].min_x : test_x-1;
+          min_x = bl_dvs && ( bl_dvs.range[ test_y ].min_x < min_x ) ? bl_dvs.range[ test_y ].min_x : min_x;
+          for (x=test_x-1;x>=min_x;x--) {
+            if ( Map.IsCorner( x, test_y ) ) {
+              boundary_corners.push( {x:x, y:test_y} );
+              break;
+            } 
+          }
+        }
+        if ( tr_dvs || br_dvs ) {
+          max_x = tr_dvs ? tr_dvs.range[ test_y-1 ].max_x : 0;
+          max_x = br_dvs && ( br_dvs.range[ test_y ].max_x > max_x ) ? br_dvs.range[ test_y ].max_x : max_x;
+          for (x=test_x+1;x<=max_x+1;x++) {
+            if ( Map.IsCorner( x, test_y ) ) {
+              boundary_corners.push( {x:x, y:test_y} );
+              break;
+            } 
+          }
+        }
+        if ( tl_dvs || tr_dvs ) {
+          min_y = tl_dvs ? tl_dvs.min_y : test_y-1;
+          min_y = tr_dvs && ( tr_dvs.min_y < min_y ) ? tr_dvs.min_y : min_y;
+          for (y=test_y-1;y>=min_y;y--) {
+            if ( Map.IsCorner( test_x, y ) ) {
+              boundary_corners.push( {x:test_x, y:y} );
+              break;
+            } 
+          }
+        }
+        if ( bl_dvs || br_dvs ) {
+          max_y = bl_dvs ? bl_dvs.max_y : 0;
+          max_y = br_dvs && ( br_dvs.max_y > max_y ) ? br_dvs.max_y : max_y;
+          for (y=test_y+1;y<=max_y+1;y++) {
+            if ( Map.IsCorner( test_x, y ) ) {
+              boundary_corners.push( {x:test_x, y:y} );
+              break;
+            } 
+          }
+        }
+      }
+
+      // 
+      // Draw results
+      //
 
       MapCanvas.DrawFillCanvasIntoVisibleContext();
 
       if ( is_corner ) {
-        tl_dvs = Map.GetDVS( test_x-1, test_y-1, 0,      0,      test_x-1,    test_y-1,     Map.kTop    | Map.kLeft  );
-        tr_dvs = Map.GetDVS( test_x,   test_y-1, test_x, 0,      Map.Width-1, test_y-1,     Map.kTop    | Map.kRight );
-        bl_dvs = Map.GetDVS( test_x-1, test_y,   0,      test_y, test_x-1,    Map.Height-1, Map.kBottom | Map.kLeft  );
-        br_dvs = Map.GetDVS( test_x,   test_y,   test_x, test_y, Map.Width-1, Map.Height-1, Map.kBottom | Map.kRight );
-
         if ( tl_dvs ) {
-          tl_portal_results = Map.GetVisibleThroughPortals( tl_dvs, test_x, test_y );
-
           for (y=tl_dvs.min_y;y<=tl_dvs.max_y;y++) {
             for (x=tl_dvs.range[y].min_x;x<=tl_dvs.range[y].max_x;x++) {
                MapCanvas.DrawHighlight( x, y, palette[0] );
@@ -65,8 +123,6 @@ $( function() {
         }
 
         if ( tr_dvs ) {
-          tr_portal_results = Map.GetVisibleThroughPortals( tr_dvs, test_x, test_y );
-
           for (y=tr_dvs.min_y;y<=tr_dvs.max_y;y++) {
             for (x=tr_dvs.range[y].min_x;x<=tr_dvs.range[y].max_x;x++) {
                MapCanvas.DrawHighlight( x, y, palette[1] );
@@ -94,8 +150,6 @@ $( function() {
         }
 
         if ( bl_dvs ) {
-          bl_portal_results = Map.GetVisibleThroughPortals( bl_dvs, test_x, test_y );
-
           for (y=bl_dvs.min_y;y<=bl_dvs.max_y;y++) {
             for (x=bl_dvs.range[y].min_x;x<=bl_dvs.range[y].max_x;x++) {
                MapCanvas.DrawHighlight( x, y, palette[2] );
@@ -123,9 +177,6 @@ $( function() {
         }
 
         if ( br_dvs ) {
-
-          br_portal_results = Map.GetVisibleThroughPortals( br_dvs, test_x, test_y );
-
           for (y=br_dvs.min_y;y<=br_dvs.max_y;y++) {
             for (x=br_dvs.range[y].min_x;x<=br_dvs.range[y].max_x;x++) {
                MapCanvas.DrawHighlight( x, y, palette[3] );
@@ -205,6 +256,15 @@ $( function() {
             MapCanvas.VisibleContext.arc(x*MapCanvas.GridSize, y*MapCanvas.GridSize, 8, 0, 2 * Math.PI, true);
             MapCanvas.VisibleContext.fill();
           }
+        }
+
+        MapCanvas.VisibleContext.fillStyle = 'rgb(255,128,255)';
+        for (i=0;i<boundary_corners.length;i++) {
+          x = boundary_corners[i].x;
+          y = boundary_corners[i].y;
+          MapCanvas.VisibleContext.beginPath();
+          MapCanvas.VisibleContext.arc(x*MapCanvas.GridSize, y*MapCanvas.GridSize, 8, 0, 2 * Math.PI, true);
+          MapCanvas.VisibleContext.fill();
         }
       }
 
