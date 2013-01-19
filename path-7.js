@@ -32,6 +32,12 @@ $( function() {
       var min_y;
       var max_x;
       var max_y;
+      var min_x_valid = false;
+      var min_y_valid = false;
+      var max_x_valid = false;
+      var max_y_valid = false;
+      var tl_min_x;
+      var tl_min_y;
 
       //
       // Calculate results
@@ -46,45 +52,98 @@ $( function() {
         tr_portal_results = Map.GetVisibleThroughPortals( tr_dvs, test_x, test_y );
         bl_portal_results = Map.GetVisibleThroughPortals( bl_dvs, test_x, test_y );
         br_portal_results = Map.GetVisibleThroughPortals( br_dvs, test_x, test_y );
-        if ( tl_dvs || bl_dvs ) {
-          min_x = tl_dvs ? tl_dvs.range[ test_y-1 ].min_x : test_x-1;
-          min_x = bl_dvs && ( bl_dvs.range[ test_y ].min_x < min_x ) ? bl_dvs.range[ test_y ].min_x : min_x;
-          for (x=test_x-1;x>=min_x;x--) {
+
+        if ( tl_dvs ) {
+          for (x=test_x-1;x>=tl_dvs.range[test_y-1].min_x;x--) {
             if ( Map.IsCorner( x, test_y ) ) {
-              boundary_corners.push( {x:x, y:test_y} );
+              min_x       = x;
+              min_x_valid = !Map.HasWallLeft( x, test_y-1 );
+              break;
+            } 
+          }
+
+          for (y=test_y-1;y>=tl_dvs.min_y;y--) {
+            if ( Map.IsCorner( test_x, y ) ) {
+              min_y       = y;
+              min_y_valid = !Map.HasWallTop( test_x-1, y );
               break;
             } 
           }
         }
-        if ( tr_dvs || br_dvs ) {
-          max_x = tr_dvs ? tr_dvs.range[ test_y-1 ].max_x : 0;
-          max_x = br_dvs && ( br_dvs.range[ test_y ].max_x > max_x ) ? br_dvs.range[ test_y ].max_x : max_x;
-          for (x=test_x+1;x<=max_x+1;x++) {
+
+        if ( tr_dvs ) {
+          for (x=test_x+1;x<=tr_dvs.range[test_y-1].max_x+1;x++) {
             if ( Map.IsCorner( x, test_y ) ) {
-              boundary_corners.push( {x:x, y:test_y} );
+              max_x       = x;
+              max_x_valid = !Map.HasWallLeft( x, test_y-1 );
+              break;
+            } 
+          }
+
+          for (y=test_y-1;y>=tr_dvs.min_y;y--) {
+            if ( Map.IsCorner( test_x, y ) ) {
+              if ( ((min_y_valid) && (y > min_y)) || (!min_y_valid) ) {
+                min_y       = y;
+                min_y_valid = !Map.HasWallTop( test_x, y );
+                break;
+              }
+            } 
+          }
+        }
+
+        if ( bl_dvs ) {
+          for (x=test_x-1;x>=bl_dvs.range[test_y].min_x;x--) {
+            if ( Map.IsCorner( x, test_y ) ) {
+              if ( ((min_x_valid) && (x > min_x)) || (!min_x_valid) ) {
+                min_x       = x;
+                min_x_valid = !Map.HasWallLeft( x, test_y );
+                break;
+              }
+            } 
+          }
+
+          for (y=test_y+1;y<=bl_dvs.max_y+1;y++) {
+            if ( Map.IsCorner( test_x, y ) ) {
+              max_y       = y;
+              max_y_valid = !Map.HasWallTop( test_x-1, y );
               break;
             } 
           }
         }
-        if ( tl_dvs || tr_dvs ) {
-          min_y = tl_dvs ? tl_dvs.min_y : test_y-1;
-          min_y = tr_dvs && ( tr_dvs.min_y < min_y ) ? tr_dvs.min_y : min_y;
-          for (y=test_y-1;y>=min_y;y--) {
+
+        if ( br_dvs ) {
+          for (x=test_x+1;x<=br_dvs.range[test_y].max_x+1;x++) {
+            if ( Map.IsCorner( x, test_y ) ) {
+              if ( ((max_x_valid) && (x < max_x)) || (!max_x_valid) ) {
+                max_x       = x;
+                max_x_valid = !Map.HasWallLeft( x, test_y );
+                break;
+              }
+            } 
+          }
+
+          for (y=test_y+1;y<=br_dvs.max_y+1;y++) {
             if ( Map.IsCorner( test_x, y ) ) {
-              boundary_corners.push( {x:test_x, y:y} );
-              break;
+              if ( ((max_y_valid) && (y < max_y)) || (!max_y_valid) ) {
+                max_y       = y;
+                max_y_valid = !Map.HasWallTop( test_x, y );
+                break;
+              }
             } 
           }
         }
-        if ( bl_dvs || br_dvs ) {
-          max_y = bl_dvs ? bl_dvs.max_y : 0;
-          max_y = br_dvs && ( br_dvs.max_y > max_y ) ? br_dvs.max_y : max_y;
-          for (y=test_y+1;y<=max_y+1;y++) {
-            if ( Map.IsCorner( test_x, y ) ) {
-              boundary_corners.push( {x:test_x, y:y} );
-              break;
-            } 
-          }
+
+        if ( min_x_valid ) {
+          boundary_corners.push( {x:min_x, y:test_y} );
+        }
+        if ( max_x_valid ) {
+          boundary_corners.push( {x:max_x, y:test_y} );
+        }
+        if ( min_y_valid ) {
+          boundary_corners.push( {x:test_x, y:min_y} );
+        }
+        if ( max_y_valid ) { 
+          boundary_corners.push( {x:test_x, y:max_y} );
         }
       }
 

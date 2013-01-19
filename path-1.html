@@ -4,4 +4,16 @@
 <script src="./GridMap.js"> </script>
 <script src="./GridMapCanvas.js"> </script>
 <script src="./path-1.js"> </script>
+<body>
+<ol>
+<li><a href="path-0.html">Step 0</a>: Divide map into regions. e.g. grid or polygon groups.</li>
+<li><a href="path-1.html">Step 1</a>: Find all inner corner (edges) which can potentially occlude line of sight.</li>
+<li><a href="path-2.html">Step 2</a>: Calculate Definitely Visible Set (DVS) per regions. Regions which can be competely seen from every point in a region.</li>
+<li><a href="path-3.html">Step 3</a>: From DVS and inner corners, calculate portals per DVS. Edges/polys which can potentially lead to additional visible areas.</li>
+<li><a href="path-4.html">Step 4</a>: For any position, cast rays through portal edges/corners to walls, or through other portals (recursively.)</li>
+<li><a href="path-5.html">Step 5</a>: For any position, given complete visible area, find inner corners (where test point is behind at least one edge/poly of corner)</li>
+<li><a href="path-6.html">Step 6</a>: For any inner corner, gather DVS and portals from all regions which share that corner. Merge into a single set.</li>
+<li><a href="path-7.html">Step 7</a>: For any inner corner, cast rays through portals to find visible area. Collect any inner corner in light-of-sight. Take special care to add inner corners along boundary of merged DVSs.</li>
+</ol>
+</body>
 </html>
