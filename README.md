@@ -19,3 +19,5 @@ Order of demonstration (interactive steps)
    - Extra care to include (unoccluded) corners along DVS boundaries
    - Extra care for two-sided walls (corners which are only corners from one side)
 9. Visualize corner to corner distance triangular array (sparse)
+
+(Test edit from Kindle Fire+Android 4.2.1+Arch Linux)
