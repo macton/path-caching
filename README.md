@@ -17,4 +17,5 @@ Order of demonstration (interactive steps)
 7. (path-6.html) Display merged DVS and facing portals per region that includes corner
 8. (path-7.html) Display solid visible area. Collect line of sight corners.
    - Extra care to include (unoccluded) corners along DVS boundaries
+   - Extra care for two-sided walls (corners which are only corners from one side)
 9. Visualize corner to corner distance triangular array (sparse)

@@ -571,3 +571,113 @@ GridMap.prototype.ReduceCorners = function( test_x, test_y, results ) {
     results.corners.push( { x: corner_by_slope[corner].x, y: corner_by_slope[corner].y, dist_sq: corner_by_slope[corner].dist_sq  } );
   } 
 }
+
+GridMap.prototype.GetDVSBoundaryCorners = function( test_x, test_y, tl_dvs, tr_dvs, bl_dvs, br_dvs ) {
+  var self = this;
+  var x;
+  var y;
+  var min_x;
+  var min_y;
+  var max_x;
+  var max_y;
+  var min_x_valid = false;
+  var min_y_valid = false;
+  var max_x_valid = false;
+  var max_y_valid = false;
+  var boundary_corners = [];
+
+  if ( tl_dvs ) {
+    for (x=test_x-1;x>=tl_dvs.range[test_y-1].min_x;x--) {
+      if ( self.IsCorner( x, test_y ) ) {
+        min_x       = x;
+        min_x_valid = !self.HasWallLeft( x, test_y-1 );
+        break;
+      } 
+    }
+
+    for (y=test_y-1;y>=tl_dvs.min_y;y--) {
+      if ( self.IsCorner( test_x, y ) ) {
+        min_y       = y;
+        min_y_valid = !self.HasWallTop( test_x-1, y );
+        break;
+      } 
+    }
+  }
+
+  if ( tr_dvs ) {
+    for (x=test_x+1;x<=tr_dvs.range[test_y-1].max_x+1;x++) {
+      if ( self.IsCorner( x, test_y ) ) {
+        max_x       = x;
+        max_x_valid = !self.HasWallLeft( x, test_y-1 );
+        break;
+      } 
+    }
+
+    for (y=test_y-1;y>=tr_dvs.min_y;y--) {
+      if ( self.IsCorner( test_x, y ) ) {
+        if ( ((min_y_valid) && (y > min_y)) || (!min_y_valid) ) {
+          min_y       = y;
+          min_y_valid = !self.HasWallTop( test_x, y );
+          break;
+        }
+      } 
+    }
+  }
+
+  if ( bl_dvs ) {
+    for (x=test_x-1;x>=bl_dvs.range[test_y].min_x;x--) {
+      if ( self.IsCorner( x, test_y ) ) {
+        if ( ((min_x_valid) && (x > min_x)) || (!min_x_valid) ) {
+          min_x       = x;
+          min_x_valid = !self.HasWallLeft( x, test_y );
+          break;
+        }
+      } 
+    }
+
+    for (y=test_y+1;y<=bl_dvs.max_y+1;y++) {
+      if ( self.IsCorner( test_x, y ) ) {
+        max_y       = y;
+        max_y_valid = !self.HasWallTop( test_x-1, y );
+        break;
+      } 
+    }
+  }
+
+  if ( br_dvs ) {
+    for (x=test_x+1;x<=br_dvs.range[test_y].max_x+1;x++) {
+      if ( self.IsCorner( x, test_y ) ) {
+        if ( ((max_x_valid) && (x < max_x)) || (!max_x_valid) ) {
+          max_x       = x;
+          max_x_valid = !self.HasWallLeft( x, test_y );
+          break;
+        }
+      } 
+    }
+
+    for (y=test_y+1;y<=br_dvs.max_y+1;y++) {
+      if ( self.IsCorner( test_x, y ) ) {
+        if ( ((max_y_valid) && (y < max_y)) || (!max_y_valid) ) {
+          max_y       = y;
+          max_y_valid = !self.HasWallTop( test_x, y );
+          break;
+        }
+      } 
+    }
+  }
+
+  if ( min_x_valid ) {
+    boundary_corners.push( {x:min_x, y:test_y} );
+  }
+  if ( max_x_valid ) {
+    boundary_corners.push( {x:max_x, y:test_y} );
+  }
+  if ( min_y_valid ) {
+    boundary_corners.push( {x:test_x, y:min_y} );
+  }
+  if ( max_y_valid ) { 
+    boundary_corners.push( {x:test_x, y:max_y} );
+  }
+
+  return boundary_corners;
+}

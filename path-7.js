@@ -24,127 +24,50 @@ $( function() {
       var tr_portal_results;
       var bl_portal_results;
       var br_portal_results;
-      var boundary_corners = [];
+      var boundary_corners;
       var i;
       var x;
       var y;
-      var min_x;
-      var min_y;
-      var max_x;
-      var max_y;
-      var min_x_valid = false;
-      var min_y_valid = false;
-      var max_x_valid = false;
-      var max_y_valid = false;
-      var tl_min_x;
-      var tl_min_y;
+      var has_v_up_wall;
+      var has_v_down_wall;
+      var has_h_left_wall;
+      var has_h_right_wall;
+      var is_tl_inner;
+      var is_tr_inner;
+      var is_bl_inner;
+      var is_br_inner;
 
       //
       // Calculate results
       //
 
       if ( is_corner ) {
-        tl_dvs            = Map.GetDVS( test_x-1, test_y-1, 0,      0,      test_x-1,    test_y-1,     Map.kTop    | Map.kLeft  );
-        tr_dvs            = Map.GetDVS( test_x,   test_y-1, test_x, 0,      Map.Width-1, test_y-1,     Map.kTop    | Map.kRight );
-        bl_dvs            = Map.GetDVS( test_x-1, test_y,   0,      test_y, test_x-1,    Map.Height-1, Map.kBottom | Map.kLeft  );
-        br_dvs            = Map.GetDVS( test_x,   test_y,   test_x, test_y, Map.Width-1, Map.Height-1, Map.kBottom | Map.kRight );
-        tl_portal_results = Map.GetVisibleThroughPortals( tl_dvs, test_x, test_y );
-        tr_portal_results = Map.GetVisibleThroughPortals( tr_dvs, test_x, test_y );
-        bl_portal_results = Map.GetVisibleThroughPortals( bl_dvs, test_x, test_y );
-        br_portal_results = Map.GetVisibleThroughPortals( br_dvs, test_x, test_y );
-
-        if ( tl_dvs ) {
-          for (x=test_x-1;x>=tl_dvs.range[test_y-1].min_x;x--) {
-            if ( Map.IsCorner( x, test_y ) ) {
-              min_x       = x;
-              min_x_valid = !Map.HasWallLeft( x, test_y-1 );
-              break;
-            } 
-          }
-
-          for (y=test_y-1;y>=tl_dvs.min_y;y--) {
-            if ( Map.IsCorner( test_x, y ) ) {
-              min_y       = y;
-              min_y_valid = !Map.HasWallTop( test_x-1, y );
-              break;
-            } 
-          }
+        has_v_up_wall     = Map.HasWallLeft( test_x, test_y-1 ); 
+        has_v_down_wall   = Map.HasWallLeft( test_x, test_y ); 
+        has_h_left_wall   = Map.HasWallTop( test_x-1, test_y ); 
+        has_h_right_wall  = Map.HasWallTop( test_x, test_y ); 
+        is_tl_inner       = has_v_up_wall && has_h_left_wall;
+        is_tr_inner       = has_v_up_wall && has_h_right_wall;
+        is_bl_inner       = has_v_down_wall && has_h_left_wall;
+        is_br_inner       = has_v_down_wall && has_h_right_wall;
+      
+        if (!is_tl_inner) {
+          tl_dvs            = Map.GetDVS( test_x-1, test_y-1, 0,      0,      test_x-1,    test_y-1,     Map.kTop    | Map.kLeft  );
+          tl_portal_results = Map.GetVisibleThroughPortals( tl_dvs, test_x, test_y );
         }
-
-        if ( tr_dvs ) {
-          for (x=test_x+1;x<=tr_dvs.range[test_y-1].max_x+1;x++) {
-            if ( Map.IsCorner( x, test_y ) ) {
-              max_x       = x;
-              max_x_valid = !Map.HasWallLeft( x, test_y-1 );
-              break;
-            } 
-          }
-
-          for (y=test_y-1;y>=tr_dvs.min_y;y--) {
-            if ( Map.IsCorner( test_x, y ) ) {
-              if ( ((min_y_valid) && (y > min_y)) || (!min_y_valid) ) {
-                min_y       = y;
-                min_y_valid = !Map.HasWallTop( test_x, y );
-                break;
-              }
-            } 
-          }
+        if (!is_tr_inner) {
+          tr_dvs            = Map.GetDVS( test_x,   test_y-1, test_x, 0,      Map.Width-1, test_y-1,     Map.kTop    | Map.kRight );
+          tr_portal_results = Map.GetVisibleThroughPortals( tr_dvs, test_x, test_y );
         }
-
-        if ( bl_dvs ) {
-          for (x=test_x-1;x>=bl_dvs.range[test_y].min_x;x--) {
-            if ( Map.IsCorner( x, test_y ) ) {
-              if ( ((min_x_valid) && (x > min_x)) || (!min_x_valid) ) {
-                min_x       = x;
-                min_x_valid = !Map.HasWallLeft( x, test_y );
-                break;
-              }
-            } 
-          }
-
-          for (y=test_y+1;y<=bl_dvs.max_y+1;y++) {
-            if ( Map.IsCorner( test_x, y ) ) {
-              max_y       = y;
-              max_y_valid = !Map.HasWallTop( test_x-1, y );
-              break;
-            } 
-          }
+        if (!is_bl_inner) {
+          bl_dvs            = Map.GetDVS( test_x-1, test_y,   0,      test_y, test_x-1,    Map.Height-1, Map.kBottom | Map.kLeft  );
+          bl_portal_results = Map.GetVisibleThroughPortals( bl_dvs, test_x, test_y );
         }
-
-        if ( br_dvs ) {
-          for (x=test_x+1;x<=br_dvs.range[test_y].max_x+1;x++) {
-            if ( Map.IsCorner( x, test_y ) ) {
-              if ( ((max_x_valid) && (x < max_x)) || (!max_x_valid) ) {
-                max_x       = x;
-                max_x_valid = !Map.HasWallLeft( x, test_y );
-                break;
-              }
-            } 
-          }
-
-          for (y=test_y+1;y<=br_dvs.max_y+1;y++) {
-            if ( Map.IsCorner( test_x, y ) ) {
-              if ( ((max_y_valid) && (y < max_y)) || (!max_y_valid) ) {
-                max_y       = y;
-                max_y_valid = !Map.HasWallTop( test_x, y );
-                break;
-              }
-            } 
-          }
+        if (!is_br_inner) {
+          br_dvs            = Map.GetDVS( test_x,   test_y,   test_x, test_y, Map.Width-1, Map.Height-1, Map.kBottom | Map.kRight );
+          br_portal_results = Map.GetVisibleThroughPortals( br_dvs, test_x, test_y );
         }
-
-        if ( min_x_valid ) {
-          boundary_corners.push( {x:min_x, y:test_y} );
-        }
-        if ( max_x_valid ) {
-          boundary_corners.push( {x:max_x, y:test_y} );
-        }
-        if ( min_y_valid ) {
-          boundary_corners.push( {x:test_x, y:min_y} );
-        }
-        if ( max_y_valid ) { 
-          boundary_corners.push( {x:test_x, y:max_y} );
-        }
+        boundary_corners  = Map.GetDVSBoundaryCorners( test_x, test_y, tl_dvs, tr_dvs, bl_dvs, br_dvs );
       }
 
       // 
